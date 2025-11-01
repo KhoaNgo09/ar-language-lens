@@ -27,11 +27,10 @@ run = st.checkbox("Bắt đầu nhận diện")
 FRAME_WINDOW = st.empty()
 model = YOLO("yolov8n.pt")
 
-# Mở webcam nếu người dùng bật
-if run:
-    cap = cv2.VideoCapture(0)
-    cap.set(3, 1280)
-    cap.set(4, 720)
+# Mở webcam
+cap = cv2.VideoCapture(0)
+cap.set(3, 1280)
+cap.set(4, 720)
 
 # cap = cv2.VideoCapture("../Videos/ppe-2-1.mp4")
 
@@ -107,3 +106,4 @@ while True:
     cv2.imshow("Image", img)
 
     cv2.waitKey(1)
+
