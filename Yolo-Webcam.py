@@ -25,7 +25,18 @@ st.title("📷 AR Language Lens - YOLOv8")
 st.write("Nhận diện vật thể và hiển thị tên tiếng Việt 🌏")
 
 # --- Load model YOLO ---
-model = YOLO('yolov8m.pt')  # tự tải về từ hub
+
+@st.cache_resource
+def load_model():
+    try:
+        # Tải model YOLO chính thức từ Ultralytics Hub
+        model = YOLO("yolov8m.pt")  # model nhẹ, tự tải về khi chạy lần đầu
+        return model
+    except Exception as e:
+        st.error(f"Không thể tải model: {e}")
+        return None
+
+model = load_model()
 
 # Danh sách lớp tiếng Việt
 classNames = [
@@ -112,6 +123,7 @@ elif mode == "📹 Nhận diện bằng webcam":
         media_stream_constraints={"video": True, "audio": False},
     )
     st.info("📸 Cho phép quyền truy cập webcam khi trình duyệt hỏi để bắt đầu nhận diện.")
+
 
 
 
