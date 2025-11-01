@@ -1,4 +1,4 @@
-from ultralytics import YOLO
+
 import cv2
 import cvzone
 import math
@@ -120,5 +120,6 @@ elif mode == "📹 Nhận diện bằng webcam":
         media_stream_constraints={"video": True, "audio": False},
     )
     st.info("📸 Cho phép quyền truy cập webcam khi trình duyệt hỏi để bắt đầu nhận diện.")
+
 
 
