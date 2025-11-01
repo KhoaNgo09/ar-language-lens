@@ -5,6 +5,8 @@ import math
 import streamlit as st
 import numpy as np
 from PIL import ImageFont, ImageDraw, Image
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+import av
 
 # --- Hàm hỗ trợ hiển thị tiếng Việt ---
 def draw_vietnamese_text(img1, text, position, font_size=24, color=(255, 255, 255)):
@@ -18,15 +20,12 @@ def draw_vietnamese_text(img1, text, position, font_size=24, color=(255, 255, 25
     return cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
 
 # --- Streamlit UI ---
+st.set_page_config(page_title="AR Language Lens", page_icon="📸", layout="centered")
 st.title("📷 AR Language Lens - YOLOv8")
 st.write("Nhận diện vật thể và hiển thị tên tiếng Việt 🌏")
 
-run = st.checkbox("Bắt đầu nhận diện")
-uploaded_file = st.file_uploader("📁 Tải ảnh lên để nhận diện", type=["jpg", "jpeg", "png"])
-
-# Khung hiển thị video
-FRAME_WINDOW = st.empty()
-model = YOLO("yolov8m.pt")
+# --- Load model YOLO ---
+model = YOLO("yolov8n.pt")
 
 # Danh sách lớp tiếng Việt
 classNames = [
@@ -52,27 +51,64 @@ classNames = [
     "Scissors - Kéo", "Teddy Bear - Gấu bông", "Hair Drier - Máy sấy tóc", "Toothbrush - Bàn chải đánh răng"
 ]
 
-# --- Xử lý khi người dùng upload ảnh ---
-if uploaded_file is not None and run:
-    file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-    img = cv2.imdecode(file_bytes, 1)
+# --- Chọn chế độ ---
+mode = st.radio("Chọn chế độ:", ["🖼 Nhận diện ảnh", "📹 Nhận diện bằng webcam"])
 
-    results = model(img, stream=True)
-    for r in results:
-        boxes = r.boxes
-        for box in boxes:
-            x1, y1, x2, y2 = map(int, box.xyxy[0])
-            w, h = x2 - x1, y2 - y1
-            cvzone.cornerRect(img, (x1, y1, w, h))
-            conf = math.ceil((box.conf[0] * 100)) / 100
-            if conf < 0.5:
-                continue
+# --- Xử lý ảnh upload ---
+if mode == "🖼 Nhận diện ảnh":
+    run = st.checkbox("Bắt đầu nhận diện")
+    uploaded_file = st.file_uploader("📁 Tải ảnh lên để nhận diện", type=["jpg", "jpeg", "png"])
+    FRAME_WINDOW = st.empty()
 
-            cls = int(box.cls[0])
-            label = f"{classNames[cls]} {conf:.2f}"
-            img = draw_vietnamese_text(img, label, (x1, y1 - 25), font_size=24, color=(255, 0, 255))
+    if uploaded_file is not None and run:
+        file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+        img = cv2.imdecode(file_bytes, 1)
 
-    FRAME_WINDOW.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), channels="RGB")
+        results = model(img, stream=True)
+        for r in results:
+            boxes = r.boxes
+            for box in boxes:
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                w, h = x2 - x1, y2 - y1
+                cvzone.cornerRect(img, (x1, y1, w, h))
+                conf = math.ceil((box.conf[0] * 100)) / 100
+                if conf < 0.5:
+                    continue
+                cls = int(box.cls[0])
+                label = f"{classNames[cls]} {conf:.2f}"
+                img = draw_vietnamese_text(img, label, (x1, y1 - 25), font_size=24, color=(255, 0, 255))
 
-elif not run:
-    st.info("👆 Hãy chọn ảnh và bật 'Bắt đầu nhận diện' để chạy mô hình.")
+        FRAME_WINDOW.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), channels="RGB")
+
+    elif not run:
+        st.info("👆 Hãy chọn ảnh và bật 'Bắt đầu nhận diện' để chạy mô hình.")
+
+# --- Xử lý webcam ---
+elif mode == "📹 Nhận diện bằng webcam":
+
+    class VideoTransformer(VideoTransformerBase):
+        def __init__(self):
+            self.model = model
+
+        def transform(self, frame):
+            img = frame.to_ndarray(format="bgr24")
+            results = self.model(img, stream=True)
+            for r in results:
+                for box in r.boxes:
+                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+                    w, h = x2 - x1, y2 - y1
+                    cvzone.cornerRect(img, (x1, y1, w, h))
+                    conf = math.ceil((box.conf[0] * 100)) / 100
+                    if conf < 0.5:
+                        continue
+                    cls = int(box.cls[0])
+                    label = f"{classNames[cls]} {conf:.2f}"
+                    img = draw_vietnamese_text(img, label, (x1, y1 - 25), font_size=22, color=(255, 0, 255))
+            return av.VideoFrame.from_ndarray(img, format="bgr24")
+
+    webrtc_streamer(
+        key="example",
+        video_transformer_factory=VideoTransformer,
+        media_stream_constraints={"video": True, "audio": False},
+    )
+    st.info("📸 Cho phép quyền truy cập webcam khi trình duyệt hỏi để bắt đầu nhận diện.")
