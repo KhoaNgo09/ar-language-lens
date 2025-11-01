@@ -22,20 +22,13 @@ st.title("📷 AR Language Lens - YOLOv8")
 st.write("Nhận diện vật thể và hiển thị tên tiếng Việt 🌏")
 
 run = st.checkbox("Bắt đầu nhận diện")
+uploaded_file = st.file_uploader("📁 Tải ảnh lên để nhận diện", type=["jpg", "jpeg", "png"])
 
 # Khung hiển thị video
 FRAME_WINDOW = st.empty()
-model = YOLO("yolov8n.pt")
-
-# Mở webcam
-cap = cv2.VideoCapture(0)
-cap.set(3, 1280)
-cap.set(4, 720)
-
-# cap = cv2.VideoCapture("../Videos/ppe-2-1.mp4")
-
 model = YOLO("yolov8m.pt")
 
+# Danh sách lớp tiếng Việt
 classNames = [
     "Person - Con người", "Bicycle - Xe đạp", "Car - Ô tô", "Motorbike - Xe máy", "Aeroplane - Máy bay",
     "Bus - Xe buýt", "Train - Tàu hỏa", "Truck - Xe tải", "Boat - Thuyền",
@@ -59,51 +52,27 @@ classNames = [
     "Scissors - Kéo", "Teddy Bear - Gấu bông", "Hair Drier - Máy sấy tóc", "Toothbrush - Bàn chải đánh răng"
 ]
 
-while True:
-    success, img = cap.read()
-    result = model(img, stream=True)
-    for r in result:
+# --- Xử lý khi người dùng upload ảnh ---
+if uploaded_file is not None and run:
+    file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+    img = cv2.imdecode(file_bytes, 1)
+
+    results = model(img, stream=True)
+    for r in results:
         boxes = r.boxes
         for box in boxes:
-
-            # Bounding box
-            x1,y1,x2,y2  = box.xyxy[0]
-            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
-            # cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 3)
-
-            w, h = x2-x1, y2-y1
-
-            cvzone.cornerRect(img,(x1,y1,w,h))
-            # Confidence
-            conf = math.ceil((box.conf[0]*100))/100
-            # Chỉ hiện vật có độ tin cậy cao
-            # 🎯 1. Bỏ qua nếu độ tin cậy thấp hơn 0.5
-            if conf < 0.5    :
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+            w, h = x2 - x1, y2 - y1
+            cvzone.cornerRect(img, (x1, y1, w, h))
+            conf = math.ceil((box.conf[0] * 100)) / 100
+            if conf < 0.5:
                 continue
 
-            # 🎯 2. Tính tâm của vật thể
-            cx = (x1 + x2) // 2
-            cy = (y1 + y2) // 2
-
-            # 🎯 3. Lấy kích thước khung hình (chỉ cần lấy 1 lần ở vòng đầu)
-            frame_h, frame_w, _ = img.shape
-
-            # 🎯 4. Xác định “vùng trung tâm” (ví dụ 40% giữa khung hình)
-            center_zone_x = (int(frame_w * 0.3), int(frame_w * 0.7))
-            center_zone_y = (int(frame_h * 0.3), int(frame_h * 0.7))
-
-            # 🎯 5. Chỉ nhận vật nếu tâm nằm trong vùng trung tâm
-            if not (center_zone_x[0] < cx < center_zone_x[1] and center_zone_y[0] < cy < center_zone_y[1]):
-                continue
-            # Class Name
             cls = int(box.cls[0])
-            # cvzone.putTextRect(img, f'{classNames[cls]} {conf}', (max(0, x1), max(35, y1)), scale=1, thickness=3)
-
             label = f"{classNames[cls]} {conf:.2f}"
             img = draw_vietnamese_text(img, label, (x1, y1 - 25), font_size=24, color=(255, 0, 255))
 
+    FRAME_WINDOW.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), channels="RGB")
 
-    cv2.imshow("Image", img)
-
-    cv2.waitKey(1)
-
+elif not run:
+    st.info("👆 Hãy chọn ảnh và bật 'Bắt đầu nhận diện' để chạy mô hình.")
