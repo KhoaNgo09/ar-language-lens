@@ -1,9 +1,8 @@
-ultralytics==8.0.26
+ultralytics==8.2.33
 opencv-python-headless==4.8.1.78
 cvzone==1.5.6
 streamlit==1.39.0
-streamlit-webrtc==0.47.7
-Pillow==10.0.0
-numpy==1.26.0
-pyngrok==7.0.0
-torch==2.1.2
+streamlit-webrtc==0.47.1
+numpy
+Pillow
+av
