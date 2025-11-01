@@ -1,4 +1,4 @@
-
+from ultralytics import YOLO
 import cv2
 import cvzone
 import math
@@ -25,15 +25,7 @@ st.title("📷 AR Language Lens - YOLOv8")
 st.write("Nhận diện vật thể và hiển thị tên tiếng Việt 🌏")
 
 # --- Load model YOLO ---
-import os
-model_path = "yolov8m.pt"
-
-# Nếu file chưa tồn tại, tải lại model từ Ultralytics
-if not os.path.exists(model_path):
-    from ultralytics import YOLO
-    model = YOLO('yolov8m.pt')  # tự tải về từ hub
-else:
-    model = YOLO(model_path)
+model = YOLO('yolov8m.pt')  # tự tải về từ hub
 
 # Danh sách lớp tiếng Việt
 classNames = [
