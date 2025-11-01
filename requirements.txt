@@ -1,18 +1,6 @@
-# --- Core dependencies ---
+ultralytics==8.3.20
+opencv-python-headless
+cvzone
 streamlit
-opencv-python-headless==4.9.0.80
-numpy>=1.26.0
 pillow
-matplotlib
-requests
-pyyaml
-tqdm
-scipy
-scikit-image
-
-# --- YOLO / AI related ---
-ultralytics==8.0.26
-filterpy==1.4.5
-
-# --- Optional visual tools ---
-cvzone==1.5.6
+numpy
