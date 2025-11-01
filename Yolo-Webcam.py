@@ -2,32 +2,40 @@ from ultralytics import YOLO
 import cv2
 import cvzone
 import math
-
+import streamlit as st
 import numpy as np
 from PIL import ImageFont, ImageDraw, Image
 
-# Lệnh dùng Code hỗ trợ display TViệt
+# --- Hàm hỗ trợ hiển thị tiếng Việt ---
 def draw_vietnamese_text(img1, text, position, font_size=24, color=(255, 255, 255)):
-    # Chuyển ảnh OpenCV sang Pillow (RGB)
     img_pil = Image.fromarray(cv2.cvtColor(img1, cv2.COLOR_BGR2RGB))
-
     draw = ImageDraw.Draw(img_pil)
-
-    # Dùng font có hỗ trợ tiếng Việt (nhớ để file .ttf trong cùng thư mục)
-    font = ImageFont.truetype("arial.ttf", font_size)  # hoặc tahoma.ttf, times.ttf
-
+    try:
+        font = ImageFont.truetype("arial.ttf", font_size)
+    except:
+        font = ImageFont.load_default()
     draw.text(position, text, font=font, fill=color)
-
-    # Chuyển ảnh về lại OpenCV (BGR)
     return cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
 
-cap = cv2.VideoCapture(0)
-cap.set(3, 1280)
-cap.set(4, 720)
+# --- Streamlit UI ---
+st.title("📷 AR Language Lens - YOLOv8")
+st.write("Nhận diện vật thể và hiển thị tên tiếng Việt 🌏")
+
+run = st.checkbox("Bắt đầu nhận diện")
+
+# Khung hiển thị video
+FRAME_WINDOW = st.empty()
+model = YOLO("yolov8n.pt")
+
+# Mở webcam nếu người dùng bật
+if run:
+    cap = cv2.VideoCapture(0)
+    cap.set(3, 1280)
+    cap.set(4, 720)
 
 # cap = cv2.VideoCapture("../Videos/ppe-2-1.mp4")
 
-model = YOLO("../Yolo-Weights/yolov8m.pt")
+model = YOLO("yolov8m.pt")
 
 classNames = [
     "Person - Con người", "Bicycle - Xe đạp", "Car - Ô tô", "Motorbike - Xe máy", "Aeroplane - Máy bay",
@@ -97,4 +105,5 @@ while True:
 
 
     cv2.imshow("Image", img)
+
     cv2.waitKey(1)
